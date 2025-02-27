@@ -21,6 +21,7 @@ app.get('/api/git-blame-all-lines', (req, res) => {
     const lines = rawOutput.split('\n');
     const result = [];
     let current = {};
+    
     for (const line of lines) {
       if (!line.trim()) continue;
       if (/^[0-9a-f]{40}/.test(line)) {
@@ -41,6 +42,18 @@ app.get('/api/git-blame-all-lines', (req, res) => {
     if (Object.keys(current).length > 0) {
       result.push(current);
     }
+    
+    // Get commit names using git show and cache them.
+    const commitNames = {};
+    result.forEach(record => {
+      const sha = record.commitSha;
+      if (!commitNames[sha]) {
+        // Get the commit's subject (commit name)
+        commitNames[sha] = execSync(`git show ${sha} --no-patch --pretty=format:%s`, { encoding: 'utf8' }).trim();
+      }
+      record.commitName = commitNames[sha];
+    });
+
     if (result.length === 0) {
       res.json({ message: "No git blame data found. Ensure the file has been committed." });
     } else {
