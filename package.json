@@ -1,0 +1,20 @@
+{
+  "name": "sentry-test",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "@launchdarkly/browser-telemetry": "^1.0.1",
+    "@launchdarkly/node-server-sdk": "^9.7.4",
+    "express": "^4.18.2",
+    "launchdarkly-js-client-sdk": "^3.5.0"
+  },
+  "devDependencies": {
+    "vite": "^4.0.0"
+  }
+}
