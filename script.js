@@ -1,8 +1,8 @@
 // -- Initialization Section --
 import { initialize } from "launchdarkly-js-client-sdk";
 
-const context = { kind: 'user', key: 'abcdefg' };
-const client = initialize('67bab894bffb5f0c01b78239', context, {});
+const context = { kind: 'user', key: 'placeholder' };
+const client = initialize('CLIENT_SIDE_KEY', context, {});
 
 // -- Helper Function: Fetch blame for a single line --
 async function fetchGitBlameLine(filePath, lineNumber) {
@@ -28,6 +28,29 @@ async function fetchGitBlameLine(filePath, lineNumber) {
   }
 }
 
+
+async function captureError(user, error, metricKey) {
+  let blameData = null;
+  // Use regex to extract file name and line number; matches pattern like "http://127.0.0.1:5137/script.js:100:15"
+  const stackMatch = error.stack.match(/(\S+\.js):(\d+):\d+/);
+  if (stackMatch) {
+    let errorFile = stackMatch[1];
+    // Extract only the file name (e.g., "script.js") if URL is included.
+    errorFile = errorFile.split('/').pop();
+    const errorLine = stackMatch[2];
+    blameData = await fetchGitBlameLine(errorFile, errorLine);
+  }
+  
+  const errorData = {
+    errorMessage: error.message,
+    stackTrace: error.stack,
+    blameData: blameData // single-line blame data for the error line
+  };
+  
+  client.track(metricKey, { errorData });
+  console.log('Error tracked with feature flags:', errorData);
+}
+
 // -- Error Handling Section --
 async function captureErrorWithFlags(user, error) {
   const flags = await client.allFlagsState(user);
@@ -36,6 +59,16 @@ async function captureErrorWithFlags(user, error) {
 
 // Updated Error Handling Section with improved stack extraction
 
+
+
+
+document.getElementById('broken-btn').addEventListener('click', () => {
+  try {
+    throw new Error('Button is broken!');
+  } catch (error) {
+    captureError(context, error, 'broken-button');
+  }
+});
 
 // -- Data Fetching & Processing Section --
 async function fetchGitBlameAllLines(filePath) {
@@ -66,36 +99,7 @@ async function fetchGitBlameAllLines(filePath) {
 
 
 
-async function captureError(user, error, metricKey) {
-  let blameData = null;
-  // Use regex to extract file name and line number; matches pattern like "http://127.0.0.1:5137/script.js:100:15"
-  const stackMatch = error.stack.match(/(\S+\.js):(\d+):\d+/);
-  if (stackMatch) {
-    let errorFile = stackMatch[1];
-    // Extract only the file name (e.g., "script.js") if URL is included.
-    errorFile = errorFile.split('/').pop();
-    const errorLine = stackMatch[2];
-    blameData = await fetchGitBlameLine(errorFile, errorLine);
-  }
-  
-  const errorData = {
-    errorMessage: error.message,
-    stackTrace: error.stack,
-    blameData: blameData // single-line blame data for the error line
-  };
-  
-  client.track(metricKey, { errorData });
-  console.log('Error tracked with feature flags:', errorData);
-}
 
-
-document.getElementById('broken-btn').addEventListener('click', () => {
-  try {
-    throw new Error('Button is broken!');
-  } catch (error) {
-    captureError(context, error, 'broken-button');
-  }
-});
 
 
 function processBlameData(blameData) {
