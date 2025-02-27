@@ -1,6 +1,6 @@
-# Suspect Commit Demo
+# Tracking Commit Versions with LD Metrics
 
-This project demonstrates an application that integrates Git blame data with feature flag error tracking.
+This project demonstrates how to pass commit information to LaunchDarkly to help identify the root cause of errors. 
 
 ## Overview
 
