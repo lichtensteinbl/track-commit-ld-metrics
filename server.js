@@ -19,7 +19,7 @@ app.get('/api/git-blame-all-lines', (req, res) => {
   try {
     const rawOutput = execSync(`git blame --line-porcelain "${fullFilePath}"`, { encoding: 'utf8' });
     const lines = rawOutput.split('\n');
-    const result = [];
+    let result = [];
     let current = {};
     
     for (const line of lines) {
@@ -43,13 +43,22 @@ app.get('/api/git-blame-all-lines', (req, res) => {
       result.push(current);
     }
     
+    // NEW: If a lineNumber is provided, filter result to that one record.
+    const { lineNumber } = req.query;
+    if (lineNumber) {
+      result = result.filter(record => record.finalLineNum === lineNumber);
+    }
+
     // Get commit names using git show and cache them.
     const commitNames = {};
     result.forEach(record => {
       const sha = record.commitSha;
       if (!commitNames[sha]) {
-        // Get the commit's subject (commit name)
-        commitNames[sha] = execSync(`git show ${sha} --no-patch --pretty=format:%s`, { encoding: 'utf8' }).trim();
+        if (sha === "0000000000000000000000000000000000000000") {
+          commitNames[sha] = "Uncommitted";
+        } else {
+          commitNames[sha] = execSync(`git show ${sha} --no-patch --pretty=format:%s`, { encoding: 'utf8' }).trim();
+        }
       }
       record.commitName = commitNames[sha];
     });

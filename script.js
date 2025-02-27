@@ -4,19 +4,55 @@ import { initialize } from "launchdarkly-js-client-sdk";
 const context = { kind: 'user', key: 'context-key-123abc' };
 const client = initialize('67bab894bffb5f0c01b78239', context, {});
 
+// -- Helper Function: Fetch blame for a single line --
+async function fetchGitBlameLine(filePath, lineNumber) {
+  try {
+    const url = `/api/git-blame-all-lines?filePath=${encodeURIComponent(filePath)}&lineNumber=${lineNumber}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server error: ${errorText}`);
+    }
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      console.log('Fetched blame data for line:', data);
+      return data;
+    } catch (jsonError) {
+      console.error(`Failed to parse JSON: ${text}`);
+      throw new Error(`Failed to parse JSON: ${text}`);
+    }
+  } catch (error) {
+    console.error('Error fetching blame data for a single line:', error);
+    return null;
+  }
+}
+
 // -- Error Handling Section --
 async function captureErrorWithFlags(user, error) {
   const flags = await client.allFlagsState(user);
   captureError(user, error, 'broken-button');
 }
 
-function captureError(user, error, metricKey) {
+// Updated Error Handling Section with improved stack extraction
+async function captureError(user, error, metricKey) {
+  let blameData = null;
+  // Use regex to extract file name and line number; matches pattern like "http://127.0.0.1:5137/script.js:100:15"
+  const stackMatch = error.stack.match(/(\S+\.js):(\d+):\d+/);
+  if (stackMatch) {
+    let errorFile = stackMatch[1];
+    // Extract only the file name (e.g., "script.js") if URL is included.
+    errorFile = errorFile.split('/').pop();
+    const errorLine = stackMatch[2];
+    blameData = await fetchGitBlameLine(errorFile, errorLine);
+  }
+  
   const errorData = {
     errorMessage: error.message,
     stackTrace: error.stack,
-    timestamp: new Date().toISOString(),
-    metricKey: metricKey
+    blameData: blameData // single-line blame data for the error line
   };
+  
   client.track(metricKey, { errorData });
   console.log('Error tracked with feature flags:', errorData);
 }
