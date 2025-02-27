@@ -60,6 +60,12 @@ async function fetchGitBlameAllLines(filePath) {
     return null;
   }
 }
+
+
+
+
+
+
 async function captureError(user, error, metricKey) {
   let blameData = null;
   // Use regex to extract file name and line number; matches pattern like "http://127.0.0.1:5137/script.js:100:15"
@@ -81,7 +87,6 @@ async function captureError(user, error, metricKey) {
   client.track(metricKey, { errorData });
   console.log('Error tracked with feature flags:', errorData);
 }
-
 
 
 document.getElementById('broken-btn').addEventListener('click', () => {
