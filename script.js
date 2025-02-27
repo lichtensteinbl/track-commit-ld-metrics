@@ -2,7 +2,7 @@
 import { initialize } from "launchdarkly-js-client-sdk";
 
 const context = { kind: 'user', key: 'placeholder' };
-const client = initialize('67bab894bffb5f0c01b78239', context, {});
+const client = initialize(CLIENT_SIDE_KEY, context, {});
 
 // -- Helper Function: Fetch blame for a single line --
 async function fetchGitBlameLine(filePath, lineNumber) {
