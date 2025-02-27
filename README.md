@@ -1,6 +1,6 @@
-# Tracking Commit Versions with LD Metrics
+# Tracking Commit History with LD Metrics
 
-This project demonstrates how to pass commit information to LaunchDarkly to help identify the root cause of errors. 
+This project demonstrates how to pass Commit History to LaunchDarkly to help identify the root cause of errors. 
 
 ## Overview
 
