@@ -47,6 +47,23 @@ async function fetchGitBlameAllLines(filePath) {
   }
 }
 
+// New function to process and group blame data by commit versions.
+function processBlameData(blameData) {
+  // Group records by commit SHA into commit versions.
+  const commitVersions = {};
+  blameData.forEach(record => {
+    const sha = record.commitSha;
+    if (!commitVersions[sha]) {
+      commitVersions[sha] = {
+        commitName: record.commitName, // Already included by the server
+        lines: []
+      };
+    }
+    commitVersions[sha].lines.push(record);
+  });
+  return commitVersions;
+}
+
 const user = context;
 const metricKey = 'broken-button';
 
@@ -62,11 +79,17 @@ client.waitForInitialization()
   .then(() => console.log('LaunchDarkly SDK initialized!'))
   .catch(err => console.error('Failed to initialize LaunchDarkly SDK:', err));
 
-// Example usage
+// Example usage: Fetch blame data and process into commit versions.
 const filePath = 'script.js';
+
 fetchGitBlameAllLines(filePath)
   .then(data => {
-    if (data) console.log('Git Blame Data for all lines:', data);
+    if (data) {
+      console.log('Full Blame Data:', data);
+      const commitVersions = processBlameData(data);
+      console.log('Commit Versions:', commitVersions);
+      // Optionally, update the UI with commitVersions.
+    }
   })
   .catch(error => {
     console.error('Error fetching git blame data for all lines:', error);
