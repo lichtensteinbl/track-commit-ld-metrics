@@ -1,12 +1,10 @@
+// -- Initialization Section --
 import { initialize } from "launchdarkly-js-client-sdk";
 
-const context = {
-  kind: 'user',
-  key: 'context-key-123abc'
-};
-
+const context = { kind: 'user', key: 'context-key-123abc' };
 const client = initialize('67bab894bffb5f0c01b78239', context, {});
 
+// -- Error Handling Section --
 async function captureErrorWithFlags(user, error) {
   const flags = await client.allFlagsState(user);
   captureError(user, error, 'broken-button');
@@ -23,7 +21,7 @@ function captureError(user, error, metricKey) {
   console.log('Error tracked with feature flags:', errorData);
 }
 
-// Function to fetch git blame data for all lines from the backend
+// -- Data Fetching & Processing Section --
 async function fetchGitBlameAllLines(filePath) {
   try {
     const url = `/api/git-blame-all-lines?filePath=${encodeURIComponent(filePath)}`;
@@ -35,10 +33,10 @@ async function fetchGitBlameAllLines(filePath) {
     const text = await response.text();
     try {
       const data = JSON.parse(text);
-      console.log('Git Blame Data for all lines:', data);
+      console.log('Fetched Git Blame Data:', data);
       return data;
     } catch (jsonError) {
-      console.error(`Failed to parse JSON: ${text}`);
+      console.error(`JSON parse error: ${text}`);
       throw new Error(`Failed to parse JSON: ${text}`);
     }
   } catch (error) {
@@ -47,7 +45,6 @@ async function fetchGitBlameAllLines(filePath) {
   }
 }
 
-// New function to process and group blame data by commit versions.
 function processBlameData(blameData) {
   // Group records by commit SHA into commit versions.
   const commitVersions = {};
@@ -55,7 +52,7 @@ function processBlameData(blameData) {
     const sha = record.commitSha;
     if (!commitVersions[sha]) {
       commitVersions[sha] = {
-        commitName: record.commitName, // Already included by the server
+        commitName: record.commitName, // Provided by the server endpoint.
         lines: []
       };
     }
@@ -64,14 +61,12 @@ function processBlameData(blameData) {
   return commitVersions;
 }
 
-const user = context;
-const metricKey = 'broken-button';
-
+// -- Main Execution Section --
 document.getElementById('broken-btn').addEventListener('click', () => {
   try {
     throw new Error('Button is broken!');
   } catch (error) {
-    captureError(user, error, metricKey);
+    captureError(context, error, 'broken-button');
   }
 });
 
@@ -79,19 +74,17 @@ client.waitForInitialization()
   .then(() => console.log('LaunchDarkly SDK initialized!'))
   .catch(err => console.error('Failed to initialize LaunchDarkly SDK:', err));
 
-// Example usage: Fetch blame data and process into commit versions.
 const filePath = 'script.js';
-
 fetchGitBlameAllLines(filePath)
   .then(data => {
     if (data) {
       console.log('Full Blame Data:', data);
       const commitVersions = processBlameData(data);
       console.log('Commit Versions:', commitVersions);
-      // Optionally, update the UI with commitVersions.
+      // Optionally update the UI with commit versions.
     }
   })
   .catch(error => {
-    console.error('Error fetching git blame data for all lines:', error);
+    console.error('Error processing git blame data:', error);
   });
 
